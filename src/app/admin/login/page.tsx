@@ -52,7 +52,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
             🌸Nampherng Flower Card
           </h1>
           <p className="mt-2 text-sm text-gray-500">
-            เข้าสู่ระบบสำหรับผู้ดูแลร้าน
+            ເຂົ້າສູ່ລະບົບ
           </p>
         </div>
 
@@ -84,7 +84,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-blush-200 p-3 outline-none focus:border-blush-400"
-            placeholder="กรอกรหัสผ่าน"
+            placeholder="ປ້ອນລະຫັດຜ່ານ"
           />
         </div>
 

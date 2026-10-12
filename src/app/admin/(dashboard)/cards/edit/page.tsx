@@ -85,10 +85,11 @@ function EditCard() {
       }
 
       // ลิงก์ใน QR ใช้โดเมนที่เปิดอยู่ตอนนี้ (หรือ NEXT_PUBLIC_SITE_URL ถ้าตั้งไว้)
-      const origin = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(
-        /\/+$/,
-        ""
-      );
+      // ใน ລາວ DNS ของค่ายมือถือหา *.web.app ไม่เจอ แต่ *.firebaseapp.com (เว็บเดียวกัน) เปิดได้
+      // → QR ใช้ .firebaseapp.com เสมอ ลูกค้าจะสแกนแล้วเปิดได้โดยไม่ต้อง VPN
+      const origin = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin)
+        .replace(/\/+$/, "")
+        .replace(/\.web\.app$/, ".firebaseapp.com");
       const cardUrl = `${origin}/card?id=${card.slug}`;
       // QR ความละเอียดสูงสำหรับพิมพ์ (error correction H ทนรอยยับ/รอยเปื้อน)
       const qrDataUrl = await QRCode.toDataURL(cardUrl, {
