@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LibraryTrack } from "@/src/components/admin/music-picker";
 import { publicMusicUrl } from "@/src/lib/cards";

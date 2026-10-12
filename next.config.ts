@@ -1,26 +1,13 @@
 import type { NextConfig } from "next";
 
-// อนุญาตให้ next/image โหลดรูปจาก Supabase Storage (เฉพาะ bucket สาธารณะของโปรเจกต์นี้)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
+// เวอร์ชัน Firebase: build เป็นเว็บไฟล์นิ่ง (static export) ไว้ในโฟลเดอร์ out/
+// - ไม่มีเซิร์ฟเวอร์: หน้าทั้งหมดโหลดข้อมูลจาก Supabase ในเบราว์เซอร์
+// - redirect (/ → /admin, /login, /card/:slug) ย้ายไปตั้งใน firebase.json
+// - ปิด image optimization (ต้องใช้เซิร์ฟเวอร์) → โหลดรูปจาก Supabase Storage ตรงๆ
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
-  // หน้าแรกพาไปหน้า admin (ถ้ายังไม่ login จะถูกส่งต่อไปหน้า login อัตโนมัติ)
-  async redirects() {
-    return [
-      { source: "/", destination: "/admin", permanent: false },
-      { source: "/login", destination: "/admin/login", permanent: false },
-    ];
-  },
+  output: "export",
   images: {
-    remotePatterns: supabaseUrl
-      ? [new URL(`${supabaseUrl}/storage/v1/object/public/card-images/**`)]
-      : [],
+    unoptimized: true,
   },
   turbopack: {
     rules: {

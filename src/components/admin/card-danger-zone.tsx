@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteCard } from "@/src/app/admin/actions";
+import { deleteCard } from "@/src/lib/admin-api";
 import { confirmDialog, toast } from "@/src/components/toast";
 
 export default function CardDangerZone({ id }: { id: string }) {
@@ -20,7 +20,11 @@ export default function CardDangerZone({ id }: { id: string }) {
     if (!ok) return;
     setDeleting(true);
     setError("");
-    const result = await deleteCard(id);
+    // requireAdmin อาจ throw (เช่น session หมดอายุ) → แปลงเป็น error ที่แสดงได้
+    const result = await deleteCard(id).catch(() => ({
+      ok: false as const,
+      error: "ລົບກາດບໍ່ສຳເລັດ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່",
+    }));
     if (!result.ok) {
       setError(result.error);
       setDeleting(false);

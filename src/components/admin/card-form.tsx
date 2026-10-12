@@ -8,7 +8,7 @@ import {
   discardUploads,
   updateCard,
   type CardInput,
-} from "@/src/app/admin/actions";
+} from "@/src/lib/admin-api";
 import { createClient } from "@/src/lib/supabase/client";
 import { resizeImage } from "@/src/lib/resize-image";
 import { toast } from "@/src/components/toast";
@@ -212,7 +212,7 @@ export default function CardForm({
         // ถ้าไม่ล้าง กลับมาหน้า "สร้างใหม่" จะเห็นข้อมูลเดิมและปุ่มค้างที่ "กำลังบันทึก"
         resetForm();
         toast.success("ສ້າງກາດສຳເລັດ 🎉");
-        router.push(`/admin/cards/${result.data.id}`);
+        router.push(`/admin/cards/edit?id=${result.data.id}`);
         return;
       }
 

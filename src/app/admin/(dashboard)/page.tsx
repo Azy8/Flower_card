@@ -1,10 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import Form from "next/form";
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import FlowerLoader from "@/src/components/flower-loader";
 import DateInput from "@/src/components/date-input";
-import { createClient } from "@/src/lib/supabase/server";
+import { createClient } from "@/src/lib/supabase/client";
 import { formatCardDate, publicImageUrl } from "@/src/lib/cards";
 
 const PAGE_SIZE = 10;
@@ -18,7 +21,8 @@ type Filters = {
   page: number;
 };
 
-export default function AdminHomePage({ searchParams }: PageProps<"/admin">) {
+// เวอร์ชัน Firebase: โหลดข้อมูลในเบราว์เซอร์ (RLS ใน Supabase อนุญาตเฉพาะ admin)
+export default function AdminHomePage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -32,7 +36,7 @@ export default function AdminHomePage({ searchParams }: PageProps<"/admin">) {
       </div>
 
       <Suspense fallback={<FlowerLoader label="ກຳລັງໂຫລດກາດ..." />}>
-        <Dashboard searchParams={searchParams} />
+        <Dashboard />
       </Suspense>
     </div>
   );
@@ -74,15 +78,8 @@ function createdRange(from: string, to: string) {
   };
 }
 
-// ---------- Dashboard ----------
-
-async function Dashboard({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const filters = parseFilters(await searchParams);
-  const supabase = await createClient();
+async function loadDashboard(filters: Filters): Promise<DashboardData> {
+  const supabase = createClient();
   const range = createdRange(filters.from, filters.to);
 
   // นับจำนวนตามช่วงวันที่ที่เลือก (ไม่ดึงข้อมูลแถว)
@@ -117,15 +114,69 @@ async function Dashboard({
     listQuery,
   ]);
 
+  // PGRST103 = เลขหน้าเกินจำนวนที่มี → ถือเป็นรายการว่าง
+  const listError = list.error && list.error.code !== "PGRST103";
+  return {
+    counts: {
+      all: total.count ?? 0,
+      active: active.count ?? 0,
+      inactive: inactive.count ?? 0,
+    },
+    cards: (list.data ?? []) as CardRow[],
+    totalRows: list.count ?? 0,
+    error: Boolean(listError),
+  };
+}
+
+// ---------- Dashboard ----------
+
+type CardRow = {
+  id: string;
+  title: string;
+  is_active: boolean;
+  created_at: string;
+  greeting_card_images: { path: string; position: number }[] | null;
+};
+
+type DashboardData = {
+  counts: { all: number; active: number; inactive: number };
+  cards: CardRow[];
+  totalRows: number;
+  error: boolean;
+};
+
+function Dashboard() {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const filters = useMemo(
+    () => parseFilters(Object.fromEntries(new URLSearchParams(query))),
+    [query]
+  );
+  const [data, setData] = useState<{ key: string; value: DashboardData } | null>(null);
+
+  // โหลดใหม่ทุกครั้งที่ตัวกรอง/หน้าเปลี่ยน
+  useEffect(() => {
+    let cancelled = false;
+    loadDashboard(filters).then((value) => {
+      if (!cancelled) setData({ key: query, value });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filters, query]);
+
+  if (!data || data.key !== query) return <FlowerLoader label="ກຳລັງໂຫລດກາດ..." />;
+
+  const { counts, cards, totalRows } = data.value;
+  const list = { error: data.value.error };
+
   const stats: { key: Status; label: string; value: number; tone: string }[] = [
-    { key: "all", label: "ທັງໝົດ", value: total.count ?? 0, tone: "text-plum-800" },
-    { key: "active", label: "ເປີດໃຊ້ງານ", value: active.count ?? 0, tone: "text-emerald-600" },
-    { key: "inactive", label: "ປິດໃຊ້ງານ", value: inactive.count ?? 0, tone: "text-gray-500" },
+    { key: "all", label: "ທັງໝົດ", value: counts.all, tone: "text-plum-800" },
+    { key: "active", label: "ເປີດໃຊ້ງານ", value: counts.active, tone: "text-emerald-600" },
+    { key: "inactive", label: "ປິດໃຊ້ງານ", value: counts.inactive, tone: "text-gray-500" },
   ];
 
-  const totalRows = list.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
-  const cards = list.data ?? [];
 
   return (
     <div className="space-y-4">
@@ -192,8 +243,7 @@ async function Dashboard({
         </div>
       </Form>
 
-      {/* PGRST103 = เลขหน้าเกินจำนวนที่มี → แสดงเป็นรายการว่าง */}
-      {list.error && list.error.code !== "PGRST103" ? (
+      {list.error ? (
         <p className="text-sm text-red-600">ໂຫລດລາຍການບໍ່ສຳເລັດ</p>
       ) : cards.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-blush-200 bg-white p-8 text-center">
@@ -224,7 +274,7 @@ async function Dashboard({
                 const cover = card.greeting_card_images?.[0]?.path;
                 // แสดงวันที่สร้าง ให้ตรงกับตัวกรอง
                 const date = formatCardDate(card.created_at);
-                const href = `/admin/cards/${card.id}`;
+                const href = `/admin/cards/edit?id=${card.id}`;
                 return (
                   <tr key={card.id} className="hover:bg-blush-50/60">
                     <td className="px-3 py-2">

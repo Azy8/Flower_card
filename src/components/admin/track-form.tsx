@@ -7,7 +7,7 @@ import {
   deleteTrack,
   discardUploads,
   updateTrack,
-} from "@/src/app/admin/actions";
+} from "@/src/lib/admin-api";
 import { createClient } from "@/src/lib/supabase/client";
 import { confirmDialog, toast } from "@/src/components/toast";
 import SegmentEditor, {
@@ -145,7 +145,10 @@ export default function TrackForm({ track }: { track?: ExistingTrack }) {
     if (!ok) return;
 
     setDeleting(true);
-    const result = await deleteTrack(track.id);
+    const result = await deleteTrack(track.id).catch(() => ({
+      ok: false as const,
+      error: "ລົບເພງບໍ່ສຳເລັດ ກະລຸນາເຂົ້າສູ່ລະບົບໃໝ່",
+    }));
     if (!result.ok) {
       setError(result.error);
       setDeleting(false);

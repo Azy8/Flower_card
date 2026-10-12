@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { Suspense } from "react";
+import { useEffect, useState } from "react";
 import FlowerLoader from "@/src/components/flower-loader";
-import { createClient } from "@/src/lib/supabase/server";
+import { createClient } from "@/src/lib/supabase/client";
 import { formatSeconds } from "@/src/lib/cards";
 
 export default function MusicLibraryPage() {
@@ -17,20 +19,41 @@ export default function MusicLibraryPage() {
         </Link>
       </div>
 
-      <Suspense fallback={<FlowerLoader label="ກຳລັງໂຫລດເພງ..." />}>
-        <TrackList />
-      </Suspense>
+      <TrackList />
     </div>
   );
 }
 
-async function TrackList() {
-  const supabase = await createClient();
-  // นับจำนวนการ์ดที่ใช้แต่ละเพลงไปพร้อมกัน
-  const { data: tracks, error } = await supabase
-    .from("music_tracks")
-    .select("id, title, default_start, default_end, greeting_cards(count)")
-    .order("title");
+type TrackRow = {
+  id: string;
+  title: string;
+  default_start: number | null;
+  default_end: number | null;
+  greeting_cards: { count: number }[] | null;
+};
+
+function TrackList() {
+  const [result, setResult] = useState<{ tracks: TrackRow[] | null; error: boolean } | null>(
+    null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    // นับจำนวนการ์ดที่ใช้แต่ละเพลงไปพร้อมกัน
+    createClient()
+      .from("music_tracks")
+      .select("id, title, default_start, default_end, greeting_cards(count)")
+      .order("title")
+      .then(({ data, error }) => {
+        if (!cancelled) setResult({ tracks: data as TrackRow[] | null, error: Boolean(error) });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!result) return <FlowerLoader label="ກຳລັງໂຫລດເພງ..." />;
+  const { tracks, error } = result;
 
   if (error) {
     return <p className="text-sm text-red-600">ໂຫລດລາຍການເພງບໍ່ສຳເລັດ</p>;
@@ -51,13 +74,13 @@ async function TrackList() {
   return (
     <ul className="divide-y divide-blush-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-blush-100">
       {tracks.map((t) => {
-        const used = (t.greeting_cards as { count: number }[] | null)?.[0]?.count ?? 0;
+        const used = t.greeting_cards?.[0]?.count ?? 0;
         const start = Number(t.default_start ?? 0);
         const end = t.default_end != null ? Number(t.default_end) : null;
         return (
           <li key={t.id}>
             <Link
-              href={`/admin/music/${t.id}`}
+              href={`/admin/music/edit?id=${t.id}`}
               className="flex items-center gap-3 px-3 py-2.5 hover:bg-blush-50/60"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blush-100">

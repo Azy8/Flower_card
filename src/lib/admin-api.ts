@@ -1,8 +1,9 @@
-"use server";
+// ฟังก์ชันจัดการข้อมูลฝั่ง admin — เวอร์ชัน Firebase (เว็บไฟล์นิ่ง ไม่มีเซิร์ฟเวอร์)
+// ทำงานในเบราว์เซอร์ผ่าน Supabase client โดยตรง
+// ⚠️ การตรวจสอบในไฟล์นี้มีไว้ให้ผู้ใช้เห็น error ที่อ่านเข้าใจ — ความปลอดภัยจริงอยู่ที่
+//    RLS + constraint ในฐานข้อมูล (เฉพาะ admin เขียนได้, ตรวจรูปแบบข้อมูลซ้ำทุกครั้ง)
 
-import { randomInt } from "node:crypto";
-import { refresh } from "next/cache";
-import { requireAdmin } from "@/src/lib/auth";
+import { createClient } from "@/src/lib/supabase/client";
 import {
   CARD_IMAGE_BUCKET,
   CARD_MUSIC_BUCKET,
@@ -38,17 +39,40 @@ export type ActionResult<T = undefined> =
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// log เฉพาะ code/message ของ DB ฝั่ง server (ไม่ log ข้อมูลการ์ดหรือ token)
+// log เฉพาะ code/message ของ DB ลง console (ไม่ log ข้อมูลการ์ดหรือ token)
 function logDbError(where: string, error: { code?: string; message?: string } | null) {
   console.error(`[${where}]`, error?.code ?? "", error?.message ?? "no data returned");
 }
 
-// slug สุ่ม 16 ตัว [a-z0-9] จาก CSPRNG — เดาลิงก์การ์ดของคนอื่นไม่ได้
+// slug สุ่ม 16 ตัว [a-z0-9] จาก crypto.getRandomValues (CSPRNG ของเบราว์เซอร์) — เดาลิงก์การ์ดของคนอื่นไม่ได้
+// ใช้ rejection sampling กันการกระจายตัวไม่เท่ากัน (modulo bias)
 function generateSlug() {
   const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const limit = 256 - (256 % alphabet.length);
   let slug = "";
-  for (let i = 0; i < 16; i++) slug += alphabet[randomInt(alphabet.length)];
+  while (slug.length < 16) {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    for (const b of bytes) {
+      if (b < limit && slug.length < 16) slug += alphabet[b % alphabet.length];
+    }
+  }
   return slug;
+}
+
+// ตรวจว่า login อยู่และเป็น admin (เพื่อแสดง error ที่ชัดเจน — RLS กันซ้ำอีกชั้น)
+async function requireAdmin() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("UNAUTHENTICATED");
+  const { data: admin } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!admin) throw new Error("FORBIDDEN");
+  return { supabase, user };
 }
 
 // ท่อนเพลง: start >= 0, end ว่างได้ หรือต้องมากกว่า start
@@ -151,7 +175,6 @@ export async function createCard(
       }
     }
 
-    refresh();
     return { ok: true, data: { id: card.id } };
   }
 
@@ -211,7 +234,6 @@ export async function updateCard(
     await supabase.storage.from(CARD_IMAGE_BUCKET).remove(removed);
   }
 
-  refresh();
   return { ok: true, data: undefined };
 }
 
@@ -233,7 +255,6 @@ export async function deleteCard(id: string): Promise<ActionResult> {
     await supabase.storage.from(CARD_IMAGE_BUCKET).remove(paths);
   }
 
-  refresh();
   return { ok: true, data: undefined };
 }
 
@@ -274,7 +295,6 @@ export async function createTrack(
     return { ok: false, error: "ບັນທຶກເພງບໍ່ສຳເລັດ" };
   }
 
-  refresh();
   return { ok: true, data: { id: data.id } };
 }
 
@@ -298,7 +318,6 @@ export async function updateTrack(id: string, input: TrackInput): Promise<Action
     return { ok: false, error: "ບັນທຶກເພງບໍ່ສຳເລັດ" };
   }
 
-  refresh();
   return { ok: true, data: undefined };
 }
 
@@ -323,7 +342,6 @@ export async function deleteTrack(id: string): Promise<ActionResult> {
     await supabase.storage.from(CARD_MUSIC_BUCKET).remove([track.path as string]);
   }
 
-  refresh();
   return { ok: true, data: undefined };
 }
 
