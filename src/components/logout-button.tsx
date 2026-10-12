@@ -2,11 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/client";
 
 export default function LogoutButton() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
@@ -22,8 +20,8 @@ export default function LogoutButton() {
       return;
     }
 
-    router.replace("/admin/login");
-    router.refresh();
+    // เปิดหน้า login ใหม่แบบเต็มหน้า (ล้าง state เดิมทั้งหมด)
+    window.location.replace("/admin/login");
   }
 
   return (

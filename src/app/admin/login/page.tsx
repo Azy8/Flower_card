@@ -1,11 +1,9 @@
 "use client";
 
 import { createClient } from "@/src/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,14 +26,16 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
   
       if (loginError) {
         setError("ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ ອີເມວຫຼືລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ");
+        setLoading(false);
         return;
       }
-  
-      router.replace("/admin");
-      router.refresh();
+
+      // เวอร์ชันเว็บไฟล์นิ่ง: เปิดหน้า admin ใหม่แบบเต็มหน้า (ไม่ใช้ router.replace + refresh
+      // เพราะ refresh จะยกเลิกการเปลี่ยนหน้า ทำให้ค้างที่หน้า login บนมือถือ)
+      // ปุ่มคงสถานะ "กำลังเข้าสู่ระบบ" ไว้จนหน้าใหม่โหลด
+      window.location.replace("/admin");
     } catch {
       setError("ເກີດຂໍ້ຜິດພາດກະລຸນາລອງໃໝ່");
-    } finally {
       setLoading(false);
     }
   }
