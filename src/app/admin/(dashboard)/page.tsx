@@ -3,6 +3,7 @@ import Link from "next/link";
 import Form from "next/form";
 import { Suspense } from "react";
 import FlowerLoader from "@/src/components/flower-loader";
+import DateInput from "@/src/components/date-input";
 import { createClient } from "@/src/lib/supabase/server";
 import { formatCardDate, publicImageUrl } from "@/src/lib/cards";
 
@@ -157,20 +158,20 @@ async function Dashboard({
         )}
         <label className="min-w-0 flex-1 space-y-1">
           <span className="block text-xs text-gray-500">ຈາກວັນທີ</span>
-          <input
-            type="date"
+          <DateInput
+            key={filters.from}
             name="from"
             defaultValue={filters.from}
-            className="w-full rounded-lg border border-blush-200 px-2 py-1.5 text-sm"
+            className="rounded-lg border border-blush-200 px-2 py-1.5 text-sm"
           />
         </label>
         <label className="min-w-0 flex-1 space-y-1">
           <span className="block text-xs text-gray-500">ຫາວັນທີ</span>
-          <input
-            type="date"
+          <DateInput
+            key={filters.to}
             name="to"
             defaultValue={filters.to}
-            className="w-full rounded-lg border border-blush-200 px-2 py-1.5 text-sm"
+            className="rounded-lg border border-blush-200 px-2 py-1.5 text-sm"
           />
         </label>
         <div className="flex gap-2">

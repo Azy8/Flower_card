@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/src/lib/supabase/client";
 import { resizeImage } from "@/src/lib/resize-image";
 import { toast } from "@/src/components/toast";
+import DateInput from "@/src/components/date-input";
 import MusicPicker, {
   type LibraryTrack,
   type PickedMusic,
@@ -375,12 +376,13 @@ export default function CardForm({
 
       <Field label="ວັນສຳຄັນ (ສະແດງໃນກາດ)">
         <div className="flex gap-2">
-          <input
-            type="date"
-            value={cardDate}
-            onChange={(e) => setCardDate(e.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-blush-200 p-3 outline-none focus:border-blush-400 focus:ring-2 focus:ring-blush-100"
-          />
+          <div className="min-w-0 flex-1">
+            <DateInput
+              value={cardDate}
+              onChange={setCardDate}
+              className="rounded-xl border border-blush-200 p-3 outline-none focus:border-blush-400 focus:ring-2 focus:ring-blush-100"
+            />
+          </div>
           {cardDate && (
             <button
               type="button"

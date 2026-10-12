@@ -17,17 +17,24 @@ type Props = {
 // front = ซองปิด (ด้านหน้า) → back = พลิกมาเห็นด้านหลังที่มีจดหมายโผล่ → opening → open (การ์ด)
 type Phase = "front" | "back" | "opening" | "open";
 
-// ตำแหน่งกลีบดอกไม้แบบกำหนดตายตัว (กัน hydration mismatch จากการสุ่ม)
+// ดอกไม้และหัวใจที่ร่วงลงมา — กำหนดตำแหน่งตายตัว (กัน hydration mismatch จากการสุ่ม)
 const PETALS = [
-  { left: "6%", delay: "0s", duration: "11s", size: 16, drift: "30px" },
-  { left: "18%", delay: "3s", duration: "13s", size: 12, drift: "-20px" },
-  { left: "29%", delay: "6s", duration: "10s", size: 18, drift: "40px" },
-  { left: "41%", delay: "1.5s", duration: "14s", size: 13, drift: "-35px" },
-  { left: "53%", delay: "8s", duration: "12s", size: 15, drift: "25px" },
-  { left: "64%", delay: "4.5s", duration: "11s", size: 11, drift: "-15px" },
-  { left: "76%", delay: "2s", duration: "13s", size: 17, drift: "35px" },
-  { left: "87%", delay: "7s", duration: "10s", size: 13, drift: "-30px" },
-  { left: "95%", delay: "5s", duration: "15s", size: 14, drift: "-40px" },
+  { left: "6%", delay: "0s", duration: "11s", size: 16, drift: "30px", emoji: "🌷" },
+  { left: "12%", delay: "9s", duration: "12s", size: 14, drift: "20px", emoji: "💗" },
+  { left: "18%", delay: "3s", duration: "13s", size: 12, drift: "-20px", emoji: "🌸" },
+  { left: "24%", delay: "5.5s", duration: "11s", size: 13, drift: "-25px", emoji: "💕" },
+  { left: "29%", delay: "6s", duration: "10s", size: 18, drift: "40px", emoji: "🌸" },
+  { left: "35%", delay: "2.5s", duration: "14s", size: 12, drift: "15px", emoji: "❤️" },
+  { left: "41%", delay: "1.5s", duration: "14s", size: 13, drift: "-35px", emoji: "🌷" },
+  { left: "47%", delay: "10s", duration: "12s", size: 15, drift: "30px", emoji: "💖" },
+  { left: "53%", delay: "8s", duration: "12s", size: 15, drift: "25px", emoji: "🌸" },
+  { left: "59%", delay: "0.8s", duration: "13s", size: 12, drift: "-20px", emoji: "💗" },
+  { left: "64%", delay: "4.5s", duration: "11s", size: 11, drift: "-15px", emoji: "🌸" },
+  { left: "70%", delay: "7.5s", duration: "10s", size: 14, drift: "25px", emoji: "💕" },
+  { left: "76%", delay: "2s", duration: "13s", size: 17, drift: "35px", emoji: "🌷" },
+  { left: "82%", delay: "11s", duration: "14s", size: 13, drift: "-30px", emoji: "❤️" },
+  { left: "87%", delay: "7s", duration: "10s", size: 13, drift: "-30px", emoji: "🌸" },
+  { left: "95%", delay: "5s", duration: "15s", size: 14, drift: "-40px", emoji: "💖" },
 ];
 
 export default function CardExperience(props: Props) {
@@ -63,6 +70,14 @@ export default function CardExperience(props: Props) {
       )}
 
       <Envelope title={title} phase={phase} onTap={handleEnvelopeTap} />
+
+      {/* ข้อมูลร้าน: ตัวเล็กล่างสุดของหน้า (กดเบอร์เพื่อโทรได้) */}
+      <footer className="absolute inset-x-0 bottom-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px] text-plum-700/60">
+        ຮ້ານດອກໄມ້ນຳ້ເຜິ້ງ ບ້ານເຈງ{" "}
+        <a href="tel:02054401179" className="underline-offset-2 hover:underline">
+          02054401179
+        </a>
+      </footer>
 
       {phase === "open" && (
         <LetterCard
@@ -105,7 +120,7 @@ function Petals() {
             } as React.CSSProperties
           }
         >
-          {i % 3 === 0 ? "🌷" : "🌸"}
+          {p.emoji}
         </span>
       ))}
     </div>

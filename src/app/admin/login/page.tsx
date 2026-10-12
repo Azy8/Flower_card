@@ -27,14 +27,14 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
         });
   
       if (loginError) {
-        setError("เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน");
+        setError("ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ ອີເມວຫຼືລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ");
         return;
       }
   
       router.replace("/admin");
       router.refresh();
     } catch {
-      setError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+      setError("ເກີດຂໍ້ຜິດພາດກະລຸນາລອງໃໝ່");
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium">
-            อีเมล
+            ອີເມວ
           </label>
           <input
             id="email"
@@ -74,7 +74,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm font-medium">
-            รหัสผ่าน
+            ລະຫັດຜ່ານ
           </label>
           <input
             id="password"

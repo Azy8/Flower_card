@@ -20,7 +20,7 @@ const notoLao = Noto_Sans_Lao({
 
 export const metadata: Metadata = {
   title: "Flower Card 💌",
-  description: "การ์ดอวยพรดิจิทัลสำหรับช่อดอกไม้",
+  description: "ກາດອວນພອນດິຈິຕອນ",
 };
 
 export const viewport: Viewport = {
