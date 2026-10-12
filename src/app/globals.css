@@ -1,0 +1,210 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fdf6fb;
+  --foreground: #3f2a44;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-quicksand), var(--font-noto-thai), var(--font-noto-lao),
+    ui-sans-serif, system-ui, sans-serif;
+
+  --color-blush-50: #fdf4fb;
+  --color-blush-100: #f9e4f4;
+  --color-blush-200: #f3cdea;
+  --color-blush-300: #eaa9da;
+  --color-blush-400: #de7fc6;
+  --color-blush-500: #c85aa9;
+  --color-blush-600: #a8438c;
+  --color-plum-700: #6e4a78;
+  --color-plum-800: #4f3557;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* ---------- Animations สำหรับหน้าการ์ด ---------- */
+
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(var(--drift, 40px), 110vh, 0) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-hint {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes card-pop {
+  0% {
+    transform: translateY(24px) scale(0.94);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bloom {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.35) rotate(15deg);
+    opacity: 1;
+  }
+}
+
+/* แจ้งเตือน: ลอยลงมาจากนอกจอด้านบนแบบช้าๆ นุ่มๆ แล้วลอยกลับขึ้นไป */
+@keyframes slide-down-in {
+  from {
+    transform: translateY(calc(-100% - 2rem));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(calc(-100% - 2rem));
+    opacity: 0;
+  }
+}
+
+/* Toast: เริ่มซ่อนอยู่เหนือขอบจอ (นอกเว็บ) แล้วค่อยๆ ไหลลงมาจนหยุด
+   - เคลื่อนจาก -180px ซึ่งพ้นขอบบนแน่นอน และไม่จางหาย จึงเห็นการเลื่อนลงมาชัดเจน
+   - ใช้ keyframe แค่ 2 จุด: easing มีผลทั้งช่วง ไม่ถูกแบ่งเป็นช่วงสั้นๆ ที่ทำให้ดูพุ่ง */
+@keyframes toast-in {
+  from {
+    transform: translateY(-180px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Toast ออก: ค่อยๆ ไหลกลับขึ้นไปพ้นขอบจอด้านบน */
+@keyframes toast-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-180px);
+  }
+}
+
+.animate-toast-in {
+  /* easeOutSine: ความเร็วสม่ำเสมอแล้วค่อยๆ ชะลอ ไม่พุ่งช่วงแรก */
+  animation: toast-in 1.4s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+}
+.animate-toast-out {
+  /* easeInSine — 1s ตรงกับ LEAVE_MS ใน toast.tsx */
+  animation: toast-out 1s cubic-bezier(0.47, 0, 0.745, 0.715) both;
+}
+
+.animate-slide-down-in {
+  /* easeOutQuint: เข้ามาเร็วแล้วค่อยๆ ชะลอจนหยุด ไม่มีเด้ง */
+  animation: slide-down-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-slide-up-out {
+  /* easeInCubic: ค่อยๆ เริ่มแล้วเร่งออกนอกจอ (0.6s ตรงกับ LEAVE_MS) */
+  animation: slide-up-out 0.6s cubic-bezier(0.55, 0, 0.75, 0.2) both;
+}
+.animate-bloom {
+  animation: bloom 1.2s ease-in-out infinite;
+}
+.animate-petal {
+  animation: petal-fall linear infinite;
+}
+.animate-float-soft {
+  animation: float-soft 3.2s ease-in-out infinite;
+}
+.animate-pulse-hint {
+  animation: pulse-hint 2s ease-in-out infinite;
+}
+.animate-card-pop {
+  animation: card-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+
+/* ซ่อน scrollbar ของ carousel แต่ยังเลื่อนได้ */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-petal,
+  .animate-float-soft,
+  .animate-pulse-hint,
+  .animate-card-pop,
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
+/* แท่งเสียงเต้นในแถบชื่อเพลง */
+@keyframes eq {
+  0%,
+  100% {
+    height: 4px;
+  }
+  50% {
+    height: 12px;
+  }
+}
+.animate-eq {
+  animation: eq 0.8s ease-in-out infinite;
+}
