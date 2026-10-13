@@ -100,7 +100,7 @@ export default function FallingPetals() {
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       // จำนวนกลีบตามขนาดจอ (มือถือ ~25, จอใหญ่สูงสุด 45)
-      const count = Math.min(45, Math.max(18, Math.round((w * h) / 14000)));
+      const count = Math.min(45, Math.max(25, Math.round((w * h) / 14000)));
       petals = Array.from({ length: count }, (_, i) => petals[i] ?? makePetal(w, h, true));
     };
 
