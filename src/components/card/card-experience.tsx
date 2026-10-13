@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import FallingPetals from "./falling-petals";
 import PhotoLightbox from "./photo-lightbox";
 import { useSegmentAudio, type CardMusic } from "./use-segment-audio";
 
@@ -16,26 +17,6 @@ type Props = {
 
 // front = ซองปิด (ด้านหน้า) → back = พลิกมาเห็นด้านหลังที่มีจดหมายโผล่ → opening → open (การ์ด)
 type Phase = "front" | "back" | "opening" | "open";
-
-// ดอกไม้และหัวใจที่ร่วงลงมา — กำหนดตำแหน่งตายตัว (กัน hydration mismatch จากการสุ่ม)
-const PETALS = [
-  { left: "6%", delay: "0s", duration: "11s", size: 16, drift: "30px", emoji: "🌷" },
-  { left: "12%", delay: "9s", duration: "12s", size: 14, drift: "20px", emoji: "💗" },
-  { left: "18%", delay: "3s", duration: "13s", size: 12, drift: "-20px", emoji: "🌸" },
-  { left: "24%", delay: "5.5s", duration: "11s", size: 13, drift: "-25px", emoji: "💕" },
-  { left: "29%", delay: "6s", duration: "10s", size: 18, drift: "40px", emoji: "🌸" },
-  { left: "35%", delay: "2.5s", duration: "14s", size: 12, drift: "15px", emoji: "❤️" },
-  { left: "41%", delay: "1.5s", duration: "14s", size: 13, drift: "-35px", emoji: "🌷" },
-  { left: "47%", delay: "10s", duration: "12s", size: 15, drift: "30px", emoji: "💖" },
-  { left: "53%", delay: "8s", duration: "12s", size: 15, drift: "25px", emoji: "🌸" },
-  { left: "59%", delay: "0.8s", duration: "13s", size: 12, drift: "-20px", emoji: "💗" },
-  { left: "64%", delay: "4.5s", duration: "11s", size: 11, drift: "-15px", emoji: "🌸" },
-  { left: "70%", delay: "7.5s", duration: "10s", size: 14, drift: "25px", emoji: "💕" },
-  { left: "76%", delay: "2s", duration: "13s", size: 17, drift: "35px", emoji: "🌷" },
-  { left: "82%", delay: "11s", duration: "14s", size: 13, drift: "-30px", emoji: "❤️" },
-  { left: "87%", delay: "7s", duration: "10s", size: 13, drift: "-30px", emoji: "🌸" },
-  { left: "95%", delay: "5s", duration: "15s", size: 14, drift: "-40px", emoji: "💖" },
-];
 
 export default function CardExperience(props: Props) {
   const { title, caption, images, music } = props;
@@ -61,7 +42,7 @@ export default function CardExperience(props: Props) {
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#f7e3f3] via-[#f1dcf3] to-[#e6d3f2] px-4">
-      <Petals />
+      <FallingPetals />
 
       {music && phase !== "front" && phase !== "open" && (
         <div className="animate-fade-in absolute inset-x-0 top-5 flex justify-center px-4">
@@ -103,29 +84,6 @@ export default function CardExperience(props: Props) {
   );
 }
 
-function Petals() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      {PETALS.map((p, i) => (
-        <span
-          key={i}
-          className="animate-petal absolute top-0 opacity-0"
-          style={
-            {
-              left: p.left,
-              fontSize: p.size,
-              animationDelay: p.delay,
-              animationDuration: p.duration,
-              "--drift": p.drift,
-            } as React.CSSProperties
-          }
-        >
-          {p.emoji}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 // แถบชื่อเพลง + ปุ่มหยุด/เล่น + แท่งเสียงเต้นตอนกำลังเล่น
 function MusicChip({
