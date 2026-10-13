@@ -1,7 +1,7 @@
 // ค่าคงที่และ helper ที่ใช้ร่วมกันทั้งฝั่ง server และ client
 
 export const CARD_IMAGE_BUCKET = "card-images";
-export const MAX_IMAGES_PER_CARD = 10;
+export const MAX_IMAGES_PER_CARD = 5;
 
 export const LIMITS = {
   title: 150,

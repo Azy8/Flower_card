@@ -37,11 +37,15 @@ type ExistingCard = {
 };
 
 // รูปในฟอร์ม: path = รูปที่อยู่ใน Storage แล้ว, file = รูปใหม่ที่รออัปโหลด
+// รูปใหม่จะถูกย่อ (≤1600px) ทันทีหลังเลือก แล้วเก็บเป็น blob เล็กๆ
+// → มือถือไม่ต้องถือไฟล์ต้นฉบับขนาดใหญ่หลายรูปพร้อมกัน (กัน Safari หน่วยความจำเต็มแล้วรีหน้า)
 type ImageItem = {
   key: string;
-  previewUrl: string;
+  previewUrl: string; // "" ระหว่างกำลังย่อรูป
   path?: string;
-  file?: File;
+  blob?: Blob;
+  ext?: "webp" | "jpg";
+  processing?: boolean;
 };
 
 export default function CardForm({
@@ -72,7 +76,7 @@ export default function CardForm({
       ? { trackId: card.music.trackId, ...secondsToSegment(card.music.start, card.music.end) }
       : null
   );
-  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [status, setStatus] = useState<"idle" | "saving">("idle");
   const [error, setError] = useState("");
   const [titleError, setTitleError] = useState("");
   const titleRef = useRef<HTMLInputElement>(null);
@@ -84,34 +88,52 @@ export default function CardForm({
   }, [images]);
   useEffect(
     () => () =>
-      imagesRef.current.forEach((i) => i.file && URL.revokeObjectURL(i.previewUrl)),
+      imagesRef.current.forEach((i) => i.blob && URL.revokeObjectURL(i.previewUrl)),
     []
   );
 
-  function addFiles(files: FileList | null) {
+  const processingCount = images.filter((i) => i.processing).length;
+
+  async function addFiles(files: FileList | null) {
     if (!files) return;
     const room = MAX_IMAGES_PER_CARD - images.length;
     const picked = Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
-      .slice(0, room);
+      .slice(0, Math.max(0, room));
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (files.length > room) {
-      setError(`ใส่รูปได้สูงสุด ${MAX_IMAGES_PER_CARD} รูป`);
+      setError(`ໃສ່ຮູບໄດ້ສູງສຸດ ${MAX_IMAGES_PER_CARD} ຮູບ`);
     }
+    if (picked.length === 0) return;
+
+    // ใส่ช่องรูปพร้อมไอคอนโหลดก่อน แล้วค่อยย่อรูปทีละรูป (ทีละรูปเพื่อประหยัดหน่วยความจำมือถือ)
+    const pending = picked.map((file) => ({ file, key: crypto.randomUUID() }));
     setImages((prev) => [
       ...prev,
-      ...picked.map((file) => ({
-        key: crypto.randomUUID(),
-        file,
-        previewUrl: URL.createObjectURL(file),
-      })),
+      ...pending.map(({ key }) => ({ key, previewUrl: "", processing: true })),
     ]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    for (const { file, key } of pending) {
+      try {
+        const { blob, ext } = await resizeImage(file);
+        const previewUrl = URL.createObjectURL(blob);
+        setImages((prev) =>
+          prev.map((i) =>
+            i.key === key ? { key, previewUrl, blob, ext, processing: false } : i
+          )
+        );
+      } catch {
+        // อ่านรูปไม่ได้ (เช่นไฟล์เสีย) → เอาช่องนั้นออกและแจ้งเตือน
+        setImages((prev) => prev.filter((i) => i.key !== key));
+        setError("ມີຮູບທີ່ເປີດບໍ່ໄດ້ ກະລຸນາເລືອກຮູບອື່ນ");
+      }
+    }
   }
 
   function removeImage(key: string) {
     setImages((prev) => {
       const target = prev.find((i) => i.key === key);
-      if (target?.file) URL.revokeObjectURL(target.previewUrl);
+      if (target?.blob) URL.revokeObjectURL(target.previewUrl);
       return prev.filter((i) => i.key !== key);
     });
   }
@@ -127,7 +149,7 @@ export default function CardForm({
   }
 
   function resetForm() {
-    images.forEach((i) => i.file && URL.revokeObjectURL(i.previewUrl));
+    images.forEach((i) => i.blob && URL.revokeObjectURL(i.previewUrl));
     setTitle("");
     setMessage("");
     setCaption("");
@@ -151,6 +173,10 @@ export default function CardForm({
       return;
     }
     setTitleError("");
+    if (processingCount > 0) {
+      setError("ກະລຸນາລໍຖ້າຮູບໂຫລດໃຫ້ແລ້ວກ່ອນ");
+      return;
+    }
     setStatus("saving");
 
     const supabase = createClient();
@@ -172,8 +198,9 @@ export default function CardForm({
           paths.push(item.path);
           continue;
         }
-        const { blob, ext } = await resizeImage(item.file!);
-        const path = `cards/${crypto.randomUUID()}.${ext}`;
+        // ใช้รูปที่ย่อไว้แล้วตอนเลือก
+        const blob = item.blob!;
+        const path = `cards/${crypto.randomUUID()}.${item.ext}`;
         const { error: upError } = await supabase.storage
           .from(CARD_IMAGE_BUCKET)
           .upload(path, blob, {
@@ -212,18 +239,13 @@ export default function CardForm({
         // ถ้าไม่ล้าง กลับมาหน้า "สร้างใหม่" จะเห็นข้อมูลเดิมและปุ่มค้างที่ "กำลังบันทึก"
         resetForm();
         toast.success("ສ້າງກາດສຳເລັດ 🎉");
-        router.push(`/admin/cards/edit?id=${result.data.id}`);
+        router.push("/admin"); // กลับหน้าหลัก (เปิดการ์ดจากรายการเพื่อโหลด QR)
         return;
       }
 
+      // แก้ไขสำเร็จ → กลับหน้าหลัก
       toast.success("ບັນທຶກການແກ້ໄຂສຳເລັດ");
-
-      // อัปเดตรูปใหม่ให้เป็นรูปที่บันทึกแล้ว
-      setImages(
-        paths.map((path) => ({ key: path, path, previewUrl: publicImageUrl(path) }))
-      );
-      setStatus("saved");
-      setTimeout(() => setStatus("idle"), 2000);
+      router.push("/admin");
     } catch (e) {
       if (uploaded.length) await discardUploads(uploaded).catch(() => {});
       setError(
@@ -297,17 +319,25 @@ export default function CardForm({
               key={img.key}
               className="group relative aspect-square overflow-hidden rounded-xl bg-blush-50 ring-1 ring-blush-100"
             >
-              <Image
-                src={img.previewUrl}
-                alt={`รูปที่ ${index + 1}`}
-                fill
-                sizes="160px"
-                unoptimized={Boolean(img.file)}
-                className="object-cover"
-              />
-              {index === 0 && (
+              {img.processing ? (
+                // กำลังย่อรูป: แสดงดอกไม้หมุน (ยังเลื่อน/บันทึกไม่ได้)
+                <div className="flex h-full flex-col items-center justify-center gap-1 text-blush-500">
+                  <span className="animate-bloom text-2xl">🌸</span>
+                  <span className="text-[10px]">ກຳລັງໂຫລດ...</span>
+                </div>
+              ) : (
+                <Image
+                  src={img.previewUrl}
+                  alt={`ຮູບທີ ${index + 1}`}
+                  fill
+                  sizes="160px"
+                  unoptimized
+                  className="object-cover"
+                />
+              )}
+              {index === 0 && !img.processing && (
                 <span className="absolute left-1 top-1 rounded-full bg-blush-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                  ปก
+                  ປົກ
                 </span>
               )}
               <button
@@ -318,7 +348,11 @@ export default function CardForm({
               >
                 ×
               </button>
-              <div className="absolute inset-x-1 bottom-1 flex justify-between">
+              <div
+                className={`absolute inset-x-1 bottom-1 flex justify-between ${
+                  processingCount > 0 ? "invisible" : ""
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => moveImage(index, -1)}
@@ -418,13 +452,13 @@ export default function CardForm({
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || processingCount > 0}
         className="w-full rounded-full bg-blush-500 p-3 font-semibold text-white shadow-sm hover:bg-blush-600 disabled:opacity-60"
       >
         {saving
           ? "ກຳລັງບັນທືກ..."
-          : status === "saved"
-            ? "ບັນທືກແລ້ວ ✓"
+          : processingCount > 0
+            ? `ກຳລັງໂຫລດຮູບ (${processingCount})...`
             : card
               ? "ບັນທືກການແກ້ໄຂ"
               : "ສ້າງກາດ + QR"}

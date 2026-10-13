@@ -1,13 +1,27 @@
 "use client";
 
 import { createClient } from "@/src/lib/supabase/client";
-import { useState, type FormEvent } from "react";
+import FlowerLoader from "@/src/components/flower-loader";
+import { useEffect, useState, type FormEvent } from "react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // login ค้างไว้แล้ว (เปิดหน้า /admin/login ในแท็บใหม่) → ไปหน้า admin เลย ไม่ต้องกรอกใหม่
+  // getSession อ่าน session ที่เก็บในเครื่อง (และต่ออายุ token ให้ถ้าหมดอายุ)
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (data.session) window.location.replace("/admin");
+        else setChecking(false);
+      })
+      .catch(() => setChecking(false));
+  }, []);
 
   
 async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -40,6 +54,8 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
     }
   }
   
+
+  if (checking) return <FlowerLoader fullScreen />;
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-blush-50 p-4">
